@@ -19,4 +19,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('search-economics/', include('app.pages.search_economics.urls')),
+    path('genetic-algorithms/', include('app.pages.genetic_algorithms.urls')),
 ]
