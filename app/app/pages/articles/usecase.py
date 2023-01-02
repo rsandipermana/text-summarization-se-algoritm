@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import datetime
 from collections import defaultdict
 from app.models import Article
+from app.utils import CleanSentence
 
 class GetArticlesUseCase:
     
@@ -61,7 +62,8 @@ class GetArticlesUseCase:
         # loop through each <p> element
         for p in paragraphs:
             # print the text within the <p> element
-            text_paragraphs.append(p.text)
+            sentence = CleanSentence(p.text)
+            text_paragraphs.append(sentence)
 
         # using list comprehension to remove elements containing the text "Baca juga:"
         array = [item for item in text_paragraphs if "Baca juga:" not in item and item != ""]
@@ -82,7 +84,7 @@ class GetArticlesUseCase:
         article = {
             "title": content.find("h1").text,
             "link": link,
-            "text": array
+            "text": "".join(array)
         }
 
         # get the text of the article
