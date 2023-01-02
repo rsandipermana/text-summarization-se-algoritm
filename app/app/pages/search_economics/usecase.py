@@ -1,43 +1,35 @@
-import datetime
-import re
+import math
 from collections import defaultdict
 from app.models import Article, Summary
+from app.utils import CleanSentence, CleanSentences, Article2Sentences, CR2N, Logs
 
 class SearchEconomicUseCase:
     
     def execute(self, request):
         
         # Extract the 'article' and 'top_n' values from the request
+        cr = float(request['cr'])
         article_url = request['article_url']
         article = Article.objects.get(link=article_url)
-        top_n = int(request['top_n'])
         
         # Code for retrieving users goes here
-        summary = self.summarize(article.text, N=top_n)
+        summary = self.summarize(article, cr)
         
-        Summary.objects.create(
-            text='This is a summary of the article.', 
-            algorithm='SumBasic', 
-            compression_rate=0.5,
-            article=article
-        )
         return {
             'reference': article.text,
             'summary': summary
         }
     
-    def summarize(self, text, N=3):
+    def summarize(self, article_instance, CR=0.1):
         
         # cleaning data
-        article = self.cleaning(text)
+        article = CleanSentence(article_instance.text)
         
         # Split the article into sentences
-        sentences = re.split(r'[.?!]', article)
-        sentences = self.cleaning_whitespace(sentences)
+        sentences = Article2Sentences(article)
         
         # Tokenize the sentences
         tokens = [sentence.split() for sentence in sentences]
-        self.write_summary('tokens', tokens)
         
         # Calculate the frequency of each word in the article
         frequencies = defaultdict(int)
@@ -55,37 +47,29 @@ class SearchEconomicUseCase:
         
         # Sort the sentences by economic value
         sorted_sentences = [sentence for _, sentence in sorted(zip(values, sentences), reverse=True)]
+        N = CR2N(len(sentences), CR)
         
-        # Return the top N sentences
-        return sorted_sentences[:N]
+        top_sentences = sorted_sentences[:N]
+        clean_sentences = CleanSentences(top_sentences)
+        
+        summary = "".join(clean_sentences)
+        
+        self.store(summary, article_instance, CR)
+        # Return the top sentences clean
+        return summary
     
-    def cleaning(self, text):
-        
-        # Split the text into sentences
-        sentences = text.split('.')
-        
-        # Remove the leading and multiple whitespace from each sentence
-        sentences = self.cleaning_whitespace(sentences)
-
-        # Join the sentences back into a single text
-        text = '. '.join(sentences)
-        
-        # Return text
-        return text
-    
-    def write_summary(self, filename: str = 'test', text: any = 'test'):
-        
-        # write text into file
-        text = str(text)
-        with open(f"./logs/{filename}.json", 'w') as f:
-            f.write(text)
-            
-    def cleaning_whitespace(self, sentences):
-        
-        # Remove the leading whitespace
-        sentences = [sentence.lstrip() for sentence in sentences]
-        
-        # Remove the multiple whitespace
-        sentences = [re.sub(r'\s+', ' ', sentence) for sentence in sentences]
-        
-        return sentences
+    def store(self, summary, article, cr):
+        # Check summary if the article with algorithm already exists in the database
+        algorithm = 'SE'
+        existing_summary = Summary.objects.filter(
+            article=article, 
+            algorithm=algorithm, 
+            compression_rate=cr
+        ).first()
+        if not existing_summary:
+            Summary.objects.create(
+                text="".join(summary), 
+                algorithm=algorithm, 
+                compression_rate=cr,
+                article=article
+            )
