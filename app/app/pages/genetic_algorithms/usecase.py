@@ -2,6 +2,7 @@ import random
 from collections import defaultdict
 import string
 
+# To do fix error
 class GeneticAlgorithmUseCase:
     def execute(self, request):
         # Extract the 'article' and 'top_n' values from the request
