@@ -1,18 +1,30 @@
 import datetime
 import re
 from collections import defaultdict
+from app.models import Article, Summary
 
 class SearchEconomicUseCase:
     
     def execute(self, request):
         
         # Extract the 'article' and 'top_n' values from the request
-        article = request['article']
+        article_url = request['article_url']
+        article = Article.objects.get(link=article_url)
         top_n = int(request['top_n'])
         
         # Code for retrieving users goes here
-        result = self.summarize(article, N=top_n)
-        return {'result': result}
+        summary = self.summarize(article.text, N=top_n)
+        
+        Summary.objects.create(
+            text='This is a summary of the article.', 
+            algorithm='SumBasic', 
+            compression_rate=0.5,
+            article=article
+        )
+        return {
+            'reference': article.text,
+            'summary': summary
+        }
     
     def summarize(self, text, N=3):
         
