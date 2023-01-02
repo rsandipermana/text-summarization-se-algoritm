@@ -7,26 +7,38 @@ class GetArticlesUseCase:
     
     def execute(self, request):
         
+        # Extract the 'article' and 'top_n' values from the request
+        domain = request['domain']
+        top_n = int(request['top_n'])
+        
         # Code for retrieving users goes here
-        result = self.get_articles()
+        result = self.get_articles(domain, n=top_n)
         return {'result': result}
     
-    def get_articles(self):
-        # Runner
-        article_urls = self.get_url_articles()
-        article_details = []
+    def get_articles(self, domain, n=10):
+        # ambil HTML dari situs berita Kompas (nasional, sport, atau sub domain lainnya)
+        html = requests.get(domain).text
 
+        # gunakan Beautiful Soup untuk mengekstrak informasi
+        soup = BeautifulSoup(html, "html.parser")
+        articles = []
+
+        # cari element <h3> yang berisi judul artikel
+        h3_elements = soup.find_all("h3")
+
+        # ambil judul dan link dari setiap element <h3>
+        for h3 in h3_elements[:n]:
+            title = h3.text
+            link = h3.find("a")["href"]
+            articles.append({"title": title, "link": link})
+        
         # simpan detail artikel
-        for i, article in enumerate(article_urls):
+        article_details = []
+        for i, article in enumerate(articles):
             article_details.append(self.detail_article(article['link']))
             
+        # ambil link dan title article
         return article_details
-    
-    # def write_file(self, text, filename):
-        
-    #     # tulis teks ke dalam file
-    #     with open(filename, 'w') as f:
-    #         f.write(text)
 
     def detail_article(self, link):
         
@@ -72,24 +84,3 @@ class GetArticlesUseCase:
 
         # ambil teks artikel
         return article
-        
-    def get_url_articles(self):
-        # ambil HTML dari situs berita Kompas
-        url = "https://www.kompas.com/"
-        html = requests.get(url).text
-
-        # gunakan Beautiful Soup untuk mengekstrak informasi
-        soup = BeautifulSoup(html, "html.parser")
-        articles = []
-
-        # cari element <h3> yang berisi judul artikel
-        h3_elements = soup.find_all("h3")
-
-        # ambil judul dan link dari setiap element <h3>
-        for h3 in h3_elements[:10]:
-            title = h3.text
-            link = h3.find("a")["href"]
-            articles.append({"title": title, "link": link})
-        
-        # ambil link dan title article
-        return articles
