@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import datetime
 from collections import defaultdict
+from app.models import Article
 
 class GetArticlesUseCase:
     
@@ -35,7 +36,10 @@ class GetArticlesUseCase:
         article_details = []
         for i, article in enumerate(articles):
             article_details.append(self.detail_article(article['link']))
-            
+        
+        # Store bulk articles
+        self.store_articles(article_details)
+        
         # retrieve article link and title
         return article_details
 
@@ -83,3 +87,15 @@ class GetArticlesUseCase:
 
         # get the text of the article
         return article
+    
+    def store_articles(self, array):
+        
+        articles = []
+        for item in array:
+            # Check if the link already exists in the database
+            existing_article = Article.objects.filter(link=item['link']).first()
+            if not existing_article:  # If the link doesn't exist, create a new article
+                articles.append(Article(title=item['title'], link=item['link'], text=item['text']))
+
+        # Use bulk_create to insert multiple articles in a single query
+        Article.objects.bulk_create(articles)

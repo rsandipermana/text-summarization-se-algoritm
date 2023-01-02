@@ -2,6 +2,10 @@ from django.db import models
 
 
 class Article(models.Model):
+    # Column to store the article title
+    title = models.CharField(max_length=255, default="-")
+    # Column to store the article link
+    link = models.URLField(default="-")
     # Column to store the article text
     text = models.TextField()
     
