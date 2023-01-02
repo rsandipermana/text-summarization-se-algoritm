@@ -6,38 +6,37 @@ from collections import defaultdict
 class GetArticlesUseCase:
     
     def execute(self, request):
-        
         # Extract the 'article' and 'top_n' values from the request
         domain = request['domain']
         top_n = int(request['top_n'])
         
-        # Code for retrieving users goes here
+        # Code for retrieving articles goes here
         result = self.get_articles(domain, n=top_n)
         return {'result': result}
-    
+
     def get_articles(self, domain, n=10):
-        # ambil HTML dari situs berita Kompas (nasional, sport, atau sub domain lainnya)
+        # retrieve HTML from a news site (national, sports, or other subdomain)
         html = requests.get(domain).text
 
-        # gunakan Beautiful Soup untuk mengekstrak informasi
+        # use Beautiful Soup to extract information
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # cari element <h3> yang berisi judul artikel
+        # find elements <h3> that contain article titles
         h3_elements = soup.find_all("h3")
 
-        # ambil judul dan link dari setiap element <h3>
+        # get the title and link from each <h3> element
         for h3 in h3_elements[:n]:
             title = h3.text
             link = h3.find("a")["href"]
             articles.append({"title": title, "link": link})
         
-        # simpan detail artikel
+        # save article details
         article_details = []
         for i, article in enumerate(articles):
             article_details.append(self.detail_article(article['link']))
             
-        # ambil link dan title article
+        # retrieve article link and title
         return article_details
 
     def detail_article(self, link):
@@ -45,42 +44,42 @@ class GetArticlesUseCase:
         # link detail
         link = f"{link}?page=all"
         
-        # ambil halaman web
+        # get the web page
         response = requests.get(link)
 
-        # parse HTML menggunakan Beautiful Soup
+        # parse HTML using Beautiful Soup
         content = BeautifulSoup(response.text, "html.parser")
         
-        # ambil semua elemen <p> di dalam <div class="read__content">
+        # get all <p> elements within <div class="read__content">
         paragraphs = content.find_all("p")
         
         text_paragraphs = []
-        # looping setiap elemen <p>
+        # loop through each <p> element
         for p in paragraphs:
-            # cetak teks di dalam elemen <p>
+            # print the text within the <p> element
             text_paragraphs.append(p.text)
 
-        # menggunakan list comprehension untuk menghapus elemen yang memuat teks "Baca juga:"
+        # using list comprehension to remove elements containing the text "Baca juga:"
         array = [item for item in text_paragraphs if "Baca juga:" not in item and item != ""]
         
-        # cari indeks elemen yang memiliki teks "#JernihBerkomentar"
+        # find the index of the element containing the text "#JernihBerkomentar"
         start_index = -1
         for i, elemen in enumerate(array):
             if "#JernihBerkomentar" in elemen:
                 start_index = i
                 break
 
-        # hapus elemen setelahnya sampai akhir list array
-        if start_index != -1:  # jika elemen ditemukan
+        # remove the element and all the elements after it in the array list
+        if start_index != -1:  # if the element is found
             for i in range(start_index, len(array)):
                 del array[start_index]
         
-        # get artikel detail
+        # get the article details
         article = {
             "title": content.find("h1").text,
             "link": link,
             "text": array
         }
 
-        # ambil teks artikel
+        # get the text of the article
         return article
