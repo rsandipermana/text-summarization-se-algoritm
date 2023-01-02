@@ -20,4 +20,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('search-economics/', include('app.pages.search_economics.urls')),
     path('genetic-algorithms/', include('app.pages.genetic_algorithms.urls')),
+    path('articles/', include('app.pages.articles.urls')),
 ]
